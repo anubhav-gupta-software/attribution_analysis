@@ -91,5 +91,71 @@ class LRAttribution:
                     
         return words, word_attributions
 
+class BertAttribution:
+    def __init__(self, model_dir='models/bert'):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.to(self.device)
+        self.model.eval()
+        self.lig = LayerIntegratedGradients(self._forward_wrapper, self.model.bert.embeddings.word_embeddings)
+        
+    def _forward_wrapper(self, input_ids, attention_mask):
+        logits = self.model(input_ids=input_ids, attention_mask=attention_mask).logits
+        return logits
+        
+    def get_attribution(self, text, target_class=1):
+        inputs = self.tokenizer(text, return_tensors='pt', truncation=True, max_length=128)
+        input_ids = inputs['input_ids'].to(self.device)
+        attention_mask = inputs['attention_mask'].to(self.device)
+        pad_token_id = self.tokenizer.pad_token_id
+        ref_input_ids = torch.full_like(input_ids, pad_token_id).to(self.device)
+        
+        attributions, delta = self.lig.attribute(
+            inputs=(input_ids,),
+            baselines=(ref_input_ids,),
+            additional_forward_args=(attention_mask,),
+            target=target_class,
+            return_convergence_delta=True,
+            internal_batch_size=16
+        )
+        
+        attributions_sum = attributions.sum(dim=-1).squeeze(0).detach().cpu().numpy()
+        tokens = self.tokenizer.convert_ids_to_tokens(input_ids.squeeze(0).tolist())
+        return tokens, attributions_sum
+
+class AlbertAttribution:
+    def __init__(self, model_dir='models/albert'):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_dir)
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.to(self.device)
+        self.model.eval()
+        self.lig = LayerIntegratedGradients(self._forward_wrapper, self.model.albert.embeddings.word_embeddings)
+        
+    def _forward_wrapper(self, input_ids, attention_mask):
+        logits = self.model(input_ids=input_ids, attention_mask=attention_mask).logits
+        return logits
+        
+    def get_attribution(self, text, target_class=1):
+        inputs = self.tokenizer(text, return_tensors='pt', truncation=True, max_length=128)
+        input_ids = inputs['input_ids'].to(self.device)
+        attention_mask = inputs['attention_mask'].to(self.device)
+        pad_token_id = self.tokenizer.pad_token_id
+        ref_input_ids = torch.full_like(input_ids, pad_token_id).to(self.device)
+        
+        attributions, delta = self.lig.attribute(
+            inputs=(input_ids,),
+            baselines=(ref_input_ids,),
+            additional_forward_args=(attention_mask,),
+            target=target_class,
+            return_convergence_delta=True,
+            internal_batch_size=16
+        )
+        
+        attributions_sum = attributions.sum(dim=-1).squeeze(0).detach().cpu().numpy()
+        tokens = self.tokenizer.convert_ids_to_tokens(input_ids.squeeze(0).tolist())
+        return tokens, attributions_sum
+
 if __name__ == "__main__":
     pass

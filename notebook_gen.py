@@ -28,32 +28,33 @@ def create_nb(cells):
             
     return nb
 
-roberta_cells = [
-    ("markdown", "# RoBERTa Fine-tuning\nTraining the transformer model fully."),
-    ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom models.roberta import RobertaModel"),
+tokenizers_cells = [
+    ("markdown", "# Sub-Word Tokenization Fine-tuning\nTraining all transformer models fully: BPE (RoBERTa), WordPiece (BERT), and SentencePiece (ALBERT)."),
+    ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom models.roberta import RobertaModel\nfrom models.bert import BertModel\nfrom models.albert import AlbertModel"),
     ("code", "train_df = pd.read_pickle('../data/processed/train.pkl')\nval_df = pd.read_pickle('../data/processed/val.pkl')\n"),
-    ("code", "model = RobertaModel(model_dir='../models/roberta')\nmodel.train(train_df, val_df, epochs=3, batch_size=16)"),
-    ("code", "# For evaluation, load best model\ntest_df = pd.read_pickle('../data/processed/test.pkl')\nmodel.load()\npreds, probs = model.predict(test_df['text'].tolist(), batch_size=16)\nfrom evaluation import compute_classification_metrics\nprint('RoBERTa Test Metrics:', compute_classification_metrics(test_df['label'], preds))")
+    ("code", "# Train RoBERTa\nroberta_model = RobertaModel(model_dir='../models/roberta')\nroberta_model.train(train_df, val_df, epochs=3, batch_size=16)"),
+    ("code", "# Train BERT\nbert_model = BertModel(model_dir='../models/bert')\nbert_model.train(train_df, val_df, epochs=3, batch_size=16)"),
+    ("code", "# Train ALBERT\nalbert_model = AlbertModel(model_dir='../models/albert')\nalbert_model.train(train_df, val_df, epochs=3, batch_size=16)")
 ]
 
 adv_cells = [
-    ("markdown", "# Adversarial Evaluation\nApplying perturbations and checking Attack Success Rate (ASR) for both models."),
-    ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom perturbations import generate_adversarial_dataset\nfrom models.lr_tfidf import LRTfidfModel\nfrom models.roberta import RobertaModel\nfrom evaluation import compute_attack_success_rate, compute_classification_metrics"),
+    ("markdown", "# Adversarial Evaluation\nApplying perturbations and checking Attack Success Rate (ASR) across all 5 architectures."),
+    ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom models.lr_tfidf import LRTfidfModel\nfrom models.roberta import RobertaModel\nfrom models.bert import BertModel\nfrom models.albert import AlbertModel\nfrom evaluation import compute_attack_success_rate"),
     ("code", "adv_df = pd.read_pickle('../data/processed/adv_test.pkl')\norig_true = adv_df['label'].tolist()"),
-    ("code", "lr_model = LRTfidfModel(model_dir='../models/lr')\nlr_model.load()\nlr_orig_preds = lr_model.predict(adv_df['original_text'].tolist())\nlr_adv_preds = lr_model.predict(adv_df['perturbed_text'].tolist())\n\nlr_asr = compute_attack_success_rate(orig_true, lr_orig_preds, lr_adv_preds)\nprint(f'Overall Attack Success Rate (LR Baseline): {lr_asr:.2%}')"),
-    ("code", "rob_model = RobertaModel(model_dir='../models/roberta')\nrob_model.load()\nrob_orig_preds, _ = rob_model.predict(adv_df['original_text'].tolist(), batch_size=16)\nrob_adv_preds, _ = rob_model.predict(adv_df['perturbed_text'].tolist(), batch_size=16)\n\nrob_asr = compute_attack_success_rate(orig_true, rob_orig_preds, rob_adv_preds)\nprint(f'Overall Attack Success Rate (RoBERTa): {rob_asr:.2%}')")
+    ("code", "models = {\n    'lr_char': LRTfidfModel(model_dir='../models/lr_char', analyzer='char_wb'),\n    'lr_word': LRTfidfModel(model_dir='../models/lr_word', analyzer='word'),\n    'roberta': RobertaModel(model_dir='../models/roberta'),\n    'bert': BertModel(model_dir='../models/bert'),\n    'albert': AlbertModel(model_dir='../models/albert')\n}"),
+    ("code", "for name, model in models.items():\n    model.load()\n    if 'lr' in name:\n        orig_preds = model.predict(adv_df['original_text'].tolist())\n        adv_preds = model.predict(adv_df['perturbed_text'].tolist())\n    else:\n        orig_preds, _ = model.predict(adv_df['original_text'].tolist(), batch_size=16)\n        adv_preds, _ = model.predict(adv_df['perturbed_text'].tolist(), batch_size=16)\n    asr = compute_attack_success_rate(orig_true, orig_preds, adv_preds)\n    print(f'Overall Attack Success Rate ({name.upper()}): {asr:.2%}')")
 ]
 
 attr_cells = [
-    ("markdown", "# Attribution Alignment\nCheck how Integrated Gradients align with human rationales for Baseline and RoBERTa."),
-    ("code", "import pandas as pd\nimport sys\nimport os\nimport numpy as np\nimport matplotlib.pyplot as plt\nsys.path.append(os.path.abspath('../src'))\nfrom attribution import LRAttribution, RobertaAttribution\nfrom evaluation import compute_attribution_iou, compute_attribution_shift"),
+    ("markdown", "# Attribution Alignment\nCheck how Integrated Gradients align with human rationales across all 5 Tokenizers."),
+    ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom attribution import LRAttribution, RobertaAttribution, BertAttribution, AlbertAttribution"),
     ("code", "adv_df = pd.read_pickle('../data/processed/adv_test.pkl')\nrow = adv_df.iloc[0]\noriginal_text = row['original_text']\nperturbed_text = row['perturbed_text']"),
-    ("code", "# Baseline Attribution\nlr_attr = LRAttribution(model_dir='../models/lr')\nlr_orig_tokens, lr_orig_scores = lr_attr.get_attribution(original_text)\nlr_adv_tokens, lr_adv_scores = lr_attr.get_attribution(perturbed_text)\nprint('--- LOGISTIC REGRESSION ATTRIBUTION ---')\nprint('Original tokens:', lr_orig_tokens)\nprint('Original attributions:', lr_orig_scores.round(2))\nprint('\\nAdversarial tokens:', lr_adv_tokens)\nprint('Adversarial attributions:', lr_adv_scores.round(2))\n"),
-    ("code", "# RoBERTa Attribution\nrob_attr = RobertaAttribution(model_dir='../models/roberta')\nrob_orig_tokens, rob_orig_scores = rob_attr.get_attribution(original_text)\nrob_adv_tokens, rob_adv_scores = rob_attr.get_attribution(perturbed_text)\nprint('--- RoBERTa INTEGRATED GRADIENTS ---')\nprint('Original tokens:', rob_orig_tokens)\nprint('Original attributions:', rob_orig_scores.round(2))\nprint('\\nAdversarial tokens:', rob_adv_tokens)\nprint('Adversarial attributions:', rob_adv_scores.round(2))")
+    ("code", "attributions = {\n    'lr_char': LRAttribution(model_dir='../models/lr_char'),\n    'lr_word': LRAttribution(model_dir='../models/lr_word'),\n    'roberta': RobertaAttribution(model_dir='../models/roberta'),\n    'bert': BertAttribution(model_dir='../models/bert'),\n    'albert': AlbertAttribution(model_dir='../models/albert')\n}"),
+    ("code", "for name, attr_model in attributions.items():\n    orig_tokens, orig_scores = attr_model.get_attribution(original_text)\n    adv_tokens, adv_scores = attr_model.get_attribution(perturbed_text)\n    print(f'\\n--- {name.upper()} INTEGRATED GRADIENTS ---')\n    print('Original tokens:', orig_tokens)\n    print('Adversarial tokens:', adv_tokens)")
 ]
 
 nbs = {
-    "03_roberta.ipynb": roberta_cells,
+    "03_transformers.ipynb": tokenizers_cells,
     "04_adversarial.ipynb": adv_cells,
     "05_attribution.ipynb": attr_cells
 }
@@ -63,4 +64,4 @@ for name, cells in nbs.items():
     with open(f"notebooks/{name}", "w") as f:
         json.dump(nb_dict, f, indent=2)
 
-print("Notebooks updated for full execution!")
+print("Notebooks updated for full 5-model execution!")
