@@ -29,6 +29,7 @@ def create_nb(cells):
     return nb
 
 tokenizers_cells = [
+    ("code", "!pip install transformers datasets evaluate captum scikit-learn pandas -q"),
     ("markdown", "# Sub-Word Tokenization Fine-tuning\nTraining all transformer models fully: BPE (RoBERTa), WordPiece (BERT), and SentencePiece (ALBERT)."),
     ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom models.roberta import RobertaModel\nfrom models.bert import BertModel\nfrom models.albert import AlbertModel"),
     ("code", "train_df = pd.read_pickle('../data/processed/train.pkl')\nval_df = pd.read_pickle('../data/processed/val.pkl')\n"),
@@ -38,6 +39,8 @@ tokenizers_cells = [
 ]
 
 adv_cells = [
+    ("markdown", "# Google Colab Setup\nRun this cell to install all required dependencies."),
+    ("code", "!pip install transformers datasets evaluate captum scikit-learn pandas -q"),
     ("markdown", "# Adversarial Evaluation\nApplying perturbations and checking Attack Success Rate (ASR) across all 5 architectures."),
     ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom models.lr_tfidf import LRTfidfModel\nfrom models.roberta import RobertaModel\nfrom models.bert import BertModel\nfrom models.albert import AlbertModel\nfrom evaluation import compute_attack_success_rate"),
     ("code", "adv_df = pd.read_pickle('../data/processed/adv_test.pkl')\norig_true = adv_df['label'].tolist()"),
@@ -46,6 +49,8 @@ adv_cells = [
 ]
 
 attr_cells = [
+    ("markdown", "# Google Colab Setup\nRun this cell to install all required dependencies."),
+    ("code", "!pip install transformers datasets evaluate captum scikit-learn pandas -q"),
     ("markdown", "# Attribution Alignment\nCheck how Integrated Gradients align with human rationales across all 5 Tokenizers."),
     ("code", "import pandas as pd\nimport sys\nimport os\nsys.path.append(os.path.abspath('../src'))\nfrom attribution import LRAttribution, RobertaAttribution, BertAttribution, AlbertAttribution"),
     ("code", "adv_df = pd.read_pickle('../data/processed/adv_test.pkl')\nrow = adv_df.iloc[0]\noriginal_text = row['original_text']\nperturbed_text = row['perturbed_text']"),
