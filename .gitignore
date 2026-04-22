@@ -15,7 +15,7 @@ __pycache__/
 # Data and Models
 # (We ignore these so we don't accidentally push giant data frames or multi-gigabyte models to GitHub)
 data/processed/
-models/
+/models/
 logs/
 results/metrics/
 results/figures/
