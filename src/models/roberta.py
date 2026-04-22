@@ -62,15 +62,19 @@ class RobertaModel:
             report_to="none" 
         )
         
-        trainer = Trainer(
+        trainer_kwargs = dict(
             model=self.model,
             args=training_args,
             train_dataset=tokenized_train,
             eval_dataset=tokenized_val,
-            tokenizer=self.tokenizer,
             data_collator=data_collator,
             compute_metrics=self._compute_metrics,
         )
+        # transformers API changed: `tokenizer` -> `processing_class`.
+        try:
+            trainer = Trainer(processing_class=self.tokenizer, **trainer_kwargs)
+        except TypeError:
+            trainer = Trainer(tokenizer=self.tokenizer, **trainer_kwargs)
         
         print("Starting training...")
         trainer.train()
