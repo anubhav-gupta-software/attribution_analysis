@@ -35,7 +35,7 @@ tokenizers_cells = [
     ("code", "train_df = pd.read_pickle('../data/processed/train.pkl')\nval_df = pd.read_pickle('../data/processed/val.pkl')\n"),
     ("code", "# Train RoBERTa\nroberta_model = RobertaModel(model_dir='../models/roberta')\nroberta_model.train(train_df, val_df, epochs=3, batch_size=16)"),
     ("code", "# Train BERT\nbert_model = BertModel(model_dir='../models/bert')\nbert_model.train(train_df, val_df, epochs=3, batch_size=16)"),
-    ("code", "# Train ALBERT\nalbert_model = AlbertModel(model_dir='../models/albert')\nalbert_model.train(train_df, val_df, epochs=3, batch_size=16)")
+    ("code", "# Train ALBERT\nalbert_model = AlbertModel(model_dir='../models/albert')\nalbert_model.train(train_df, val_df, epochs=4, batch_size=16)")
 ]
 
 adv_cells = [
