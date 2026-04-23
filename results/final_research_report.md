@@ -47,16 +47,25 @@ Following rigorous 3-epoch deep learning fine-tuning cycles on Apple Silicon ten
 ### The Mathematical Evasion Delta
 The experimental data confirmed our theoretical hypothesis entirely: Tokenization dictates vulnerability. 
 
-1. **The Baselines:** The semantic-ignorant `char_wb` Character N-Gram model achieved an incredibly robust defense score (a remarkably low 3.20% ASR) because adversarial spacing and spelling manipulation failed to heavily alter the underlying coefficient extractions (e.g., `s.t.u` still matches partial weights for `s.t.u.p.i.d`). Conversely, the strict `word` baseline catastrophically failed, representing maximum theoretical brittleness.
+| Model Architecture | Tokenization Strategy | Attack Success Rate (ASR) |
+| :--- | :--- | :--- |
+| **LR_WORD (Control)** | Strict Word-Level | 14.95% |
+| **LR_CHAR (Control)** | Character N-Grams | 16.02% |
+| **RoBERTa** | Byte-Pair Encoding (BPE) | 34.91% |
+| **ALBERT** | SentencePiece (Unigram) | 42.26% |
+| **BERT** | WordPiece | 47.21% |
 
-2. **The Transformers:** Despite towering F1 out-performance on clean texts, the Sub-Word Transformers (BPE, WordPiece, and SentencePiece) heavily struggled when interpreting the 3,456 perturbations.
+1. **The Baselines:** The basic `char_wb` and `word` Logistic Regression models exhibited remarkable robustness (hovering around 15% ASR). Because these primitive algorithms lack complex self-attention constraints, they fundamentally sidestepped the sequential fragmentation vulnerabilities that plague modern tokenizers.
+
+2. **The Transformers:** Despite towering F1 out-performance on clean texts, the Sub-Word Transformers (BPE, WordPiece, and SentencePiece) heavily struggled when interpreting the 3,456 perturbations, suffering catastrophic failure rates ranging from 34.91% up to 47.21%.
 
 ### Captum Integrated Gradients Shift
 The Attack Success Rate alone merely proves the failure occurred. To prove *why* the failure occurred across BPE, WordPiece, and SentencePiece, we deployed **Captum Layer Integrated Gradients**.
 
 When processing an unmodified toxic string, the Integrated Gradients accurately isolated high-magnitude positive gradients around the offending word, perfectly aligning with human ground-truth rationale. 
 
-However, during a Space Injection or Homoglyph attack, the respective Sub-Word Encoding algorithms forcefully fractured the perturbed string into independent, semantically devoid sub-tokens mathematically irrelevant to the original token dictionary. 
+However, during a Space Injection attack, the respective Sub-Word Encoding algorithms forcefully fractured the perturbed string into independent, semantically devoid sub-tokens. For example, when BERT encountered the adversarial string `p.r.e.t.t.y`, its WordPiece algorithm collapsed the token into mathematically irrelevant fragments: `['p', '.', 'r', '.', 'e', '.', 't', '.', 't', '.', 'y']`. Similarly, ALBERT's SentencePiece isolated every character with its native space marker: `['▁p', '.', 'r', '.', 'e', '.', 't', '.', 't', '.', 'y']`.
+
 Without the semantic anchor of the toxic tensor, all three Transformer self-attention heads scattered across the remaining text sequence. The models effectively suffered from extreme "Attribution Drift," forcing them to classify the text based heavily on safe, surrounding contextual words, directly prompting false negatives. 
 
 ## 5. Final Conclusion
