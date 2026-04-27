@@ -20,5 +20,22 @@ logs/
 results/metrics/
 results/figures/
 
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+
+# ACL paper folder
+acl-style-files-master/
+
+# Report & presentation files
+results/*.md
+results/*.pdf
+
 # macOS
 .DS_Store
